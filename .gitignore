@@ -1,0 +1,15 @@
+# Environments & Secrets
+.env
+venv/
+.venv/
+
+# Pytest & Operational Caches
+.pytest_cache/
+__pycache__/
+pages/__pycache__/
+tests/__pycache__/
+utils/__pycache__/
+
+# Execution Media Artifacts
+screenshots/
+test-results/

@@ -1,0 +1,6 @@
+Production Mode (Headless)
+python3 -m pytest tests/test_checkout.py
+SLACK ALERT
+python3 -m pytest tests/test_checkout_failure.py --headed --slowmo 1000
+Headed
+python3 -m pytest tests/test_checkout.py --headed --slowmo 1000
