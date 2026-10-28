@@ -1,158 +1,84 @@
-# Checkout Sentry 🚨
+# Checkout Sentry
 
-A production-focused automated testing and monitoring framework built with **Python**, **Playwright**, and **Pytest**.
+Checkout Sentry is a Python checkout-test demo that uses Playwright and Pytest to automate a Swag Labs storefront flow and send a Slack webhook alert when a test fails.
 
-The framework continuously validates a critical e-commerce checkout workflow using the **Page Object Model (POM)** design pattern. When a failure occurs, it automatically captures screenshots and dispatches structured Slack notifications, enabling faster debugging and incident response.
+## Watch the Demo
 
----
+[![Watch the Checkout Sentry demo](https://img.youtube.com/vi/A25-7svYsNo/hqdefault.jpg)](https://youtu.be/A25-7svYsNo)
 
-# 📊 Visual Demonstration & Proof of Concept
+Watch the demonstration to see an automated checkout flow, a deliberately simulated test failure, a Slack alert with failure context, and a successful checkout test.
 
-## 1. Successful E2E Run (Headed Execution)
+## Problem and solution
 
-The framework successfully completes the entire customer journey:
+Checkout flows are important to e-commerce applications, and browser tests can check that a defined flow behaves as expected. Checkout Sentry demonstrates one repeatable checkout scenario and a failure-notification path; it is a test automation example, not a service continuously monitoring a live store.
 
-* User authentication
-* Product selection
-* Cart validation
-* Checkout completion
-* Order confirmation verification
+## What the Demo Shows
 
-![Successful Checkout Flow](media/passing_test.png) 
+- **00:00–00:06 — Alert destination:** A Slack test channel is visible beside the development workspace.
+- **00:07–00:14 — Test execution:** VS Code runs `pytest tests/test_checkout_failure.py`, and Chromium opens the Swag Labs demo storefront.
+- **00:15–00:25 — Checkout automation:** The test prepares the run, adds the Sauce Labs Backpack to the cart, opens the cart, and fills in the checkout information.
+- **00:26–00:34 — Checkout completion:** The order overview and checkout completion screen appear.
+- **00:35–00:43 — Failure notification:** The test deliberately expects confirmation text that is not present, producing a simulated assertion failure. A Slack webhook sends a Checkout Monitoring Alert with failure status, test name, and error context. This is a test failure created for the demonstration; it does not indicate that a live customer transaction failed.
+- **00:44–00:54 — Successful test run:** The terminal executes `pytest tests/test_checkout.py`, demonstrating a successful test run.
 
----
+## Features
 
-## 2. Failure Detection & Interception
+- Playwright browser automation for a single Swag Labs checkout flow.
+- Pytest tests for a successful checkout and a deliberately failing assertion.
+- Page Object Model classes for login and checkout page interactions.
+- A Pytest hook that captures a local screenshot when a test's call phase fails and attempts a Slack webhook notification.
+- Headed and headless test execution.
 
-To demonstrate failure handling, an assertion is intentionally modified. Pytest immediately detects the failure, stops execution, and triggers the monitoring workflow.
+## Architecture
 
-![Intentional Test Failure](media/failing_test.png)
-
----
-
----
-
-## 3. Real-Time Slack Alerting
-
-When a test fails, the framework automatically sends a structured Slack notification containing failure metadata and debugging information. This simulates how production monitoring systems notify engineering teams about regressions and broken user flows.
-
-
-![Slack Monitoring Notification](media/slack_alert.png)
----
-
-
----
-
-# ✨ Features
-
-* Automated end-to-end checkout testing
-* Playwright browser automation
-* Pytest-based test execution
-* Page Object Model (POM) architecture
-* Automatic screenshot capture on failures
-* Slack alert integration
-* Headless and headed execution modes
-* Centralized fixtures and test hooks
-* Maintainable and scalable project structure
-
----
-
-# 🏗️ Project Structure
-
-```text
-checkout_sentry/
-├── media/
-│   ├── passing_test.png
-│   ├── failing_test.png
-│   └── slack_alert.png
-├── pages/
-│   ├── login_page.py
-│   └── checkout_page.py
-├── tests/
-│   ├── conftest.py
-│   ├── test_checkout.py
-│   └── test_checkout_failure.py
-├── utils/
-│   └── slack_helper.py
-├── .gitignore
-├── pytest.ini
-└── README.md
+```mermaid
+flowchart TD
+    A[Pytest test] --> B[Playwright browser]
+    B --> C[Swag Labs demo storefront]
+    A --> D[LoginPage and CheckoutPage]
+    D --> B
+    A --> E{Test call fails?}
+    E -- No --> F[Successful test result]
+    E -- Yes --> G[Pytest failure hook]
+    G --> H[Save screenshot locally]
+    G --> I[Slack alert helper]
+    I --> J{Webhook configured?}
+    J -- Yes --> K[POST alert to Slack webhook]
+    J -- No --> L[Print configuration warning]
 ```
 
----
+The failure hook runs only for failures during the test call phase. The demo failure is intentionally triggered by an incorrect assertion after checkout completes; the alert is a test notification, not a live-store monitoring signal.
 
-# 🧩 Architecture
+## How it works
 
-## Page Object Model (POM)
+1. The browser test logs in to the Swag Labs demo site, adds the Sauce Labs Backpack to the cart, and completes checkout.
+2. Pytest and Playwright assertions check the expected confirmation message, URL, and empty cart in the successful test.
+3. In the failure demonstration, an assertion expects `Order Failed` instead of the storefront's `Thank you for your order!` confirmation. The failure hook saves a screenshot and invokes the Slack webhook helper.
+4. A separate successful test run exercises the normal path.
 
-UI locators and page interactions are encapsulated inside page classes.
+The Page Object Model keeps login and checkout interactions in `pages/login_page.py` and `pages/checkout_page.py`; tests are in `tests/`. The Slack helper in `utils/slack_helper.py` posts a fixed alert payload containing a test name, `FAILED` status, and the message `Expected confirmation text not found.` The screenshot is saved locally under `screenshots/`; its path is not included in the Slack message.
 
-This keeps test cases focused on business logic and assertions while improving maintainability and reducing duplication.
+## Technology stack
 
----
+- Python
+- Playwright and Pytest (including the `pytest-playwright` fixture)
+- Requests
+- `python-dotenv`
+- Slack incoming webhook
 
-## Failure Monitoring Workflow
+## Installation and setup
 
-```text
-Test Execution
-      │
-      ▼
-Assertion Failure
-      │
-      ▼
-Pytest Hook Triggered
-      │
-      ├── Capture Screenshot
-      ├── Collect Failure Details
-      └── Send Slack Notification
-      │
-      ▼
-Engineering Team Alerted
-```
-
----
-
-## Failure Handling
-
-Custom Pytest hooks automatically intercept failed test executions and perform the following actions:
-
-* Capture a screenshot of the browser state
-* Collect failure context and stack trace information
-* Generate debugging artifacts
-* Send a structured Slack notification
-
-This approach keeps successful runs lightweight while providing detailed diagnostics when failures occur.
-
----
-
-## Slack Integration
-
-Failed executions generate automated Slack alerts containing:
-
-* Test name
-* Failure status
-* Screenshot location
-* Failure details
-* Execution context
-
-This mirrors the monitoring workflows commonly used by QA, SDET, and DevOps teams.
-
----
-
-# 🚀 Installation
-
-## Clone Repository
+Clone the repository and create an environment:
 
 ```bash
 git clone https://github.com/mahadsultanchaudhary/checkout_sentry.git
 cd checkout_sentry
+python -m venv venv
 ```
 
-## Create Virtual Environment
+Activate it:
 
 ```bash
-python -m venv venv
-
 # Linux / macOS
 source venv/bin/activate
 
@@ -160,102 +86,68 @@ source venv/bin/activate
 venv\Scripts\activate
 ```
 
-## Install Dependencies
+Install the packages used by the project and Chromium:
 
 ```bash
 pip install playwright pytest pytest-playwright requests python-dotenv
-
 playwright install chromium
 ```
 
----
-
-# 🔐 Environment Variables
-
-Create a `.env` file in the project root:
+To receive Slack notifications, create a `.env` file in the project root:
 
 ```env
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/WEBHOOK/URL
 ```
 
-The `.env` file is excluded from version control through `.gitignore`.
+The `.env` file is listed in `.gitignore`. If `SLACK_WEBHOOK_URL` is unset, the helper prints a warning and skips sending the notification.
 
----
+## Run the tests
 
-# ▶️ Running Tests
-
-## Successful Checkout Flow
-
-```bash
-pytest tests/test_checkout.py --headed --slowmo 1000
-```
-
-## Failure Demonstration (Triggers Slack Alert)
-
-```bash
-pytest tests/test_checkout_failure.py --headed --slowmo 1000
-```
-
-## Headless Monitoring Mode
+Successful checkout:
 
 ```bash
 pytest tests/test_checkout.py
 ```
 
-Ideal for CI/CD pipelines and scheduled monitoring jobs.
+Deliberately failing test (invokes the failure hook):
+
+```bash
+pytest tests/test_checkout_failure.py
+```
+
+To see the browser while running either test, add `--headed --slowmo 1000`, for example:
+
+```bash
+pytest tests/test_checkout.py --headed --slowmo 1000
+```
+
+The tests navigate to `https://www.saucedemo.com/` and therefore require access to that demo site.
+
+## Example failure output and Slack alert
+
+The failure test completes the storefront checkout, then fails on the intentionally incorrect expected heading:
+
+```text
+Expected: "Order Failed"
+Received: "Thank you for your order!"
+```
+
+The hook saves a screenshot as `screenshots/failure_<test name>.png` and attempts to send a Slack message with the heading **Checkout Monitoring Alert**, the test name, `FAILED` status, and the fixed error-context text. The Slack payload labels its environment `Production Demo`; this is a hard-coded message label, not evidence of a production integration. If the webhook request returns a non-200 response, the helper prints the status and response text.
+
+![Example Slack test alert](media/slack_alert.png)
+
+The repository also includes [a successful test screenshot](media/passing_test.png) and [a simulated failure screenshot](media/failing_test.png).
+
+## Current limitations and future improvements
+
+- The tests exercise one public demo storefront and one Chromium-based checkout scenario; they do not establish comprehensive checkout coverage.
+- There is no scheduler or CI workflow in the repository, so these tests do not continuously monitor a store.
+- The failure is intentionally caused by an assertion mismatch after a successful demo checkout. It is not a real customer checkout failure.
+- The Slack alert uses fixed error-context text rather than extracting the full assertion traceback, and it does not attach or link the locally saved screenshot.
+- The webhook is optional and must be configured by the person running the tests.
+
+Possible next steps include CI execution, scheduled test runs, broader browser and scenario coverage, and richer failure diagnostics.
 
 ---
 
-# 🔄 Example Workflow
-
-1. User logs in
-2. Product is added to cart
-3. Checkout information is entered
-4. Order is submitted
-5. Confirmation message is validated
-
-If any step fails:
-
-* Screenshot is captured
-* Failure context is collected
-* Slack notification is sent automatically
-* Engineering team is alerted
-
----
-
-# 🛠️ Tech Stack
-
-* Python
-* Playwright
-* Pytest
-* Requests
-* Python Dotenv
-* Slack Webhooks
-
----
-
-# 📈 Future Improvements
-
-* GitHub Actions CI/CD integration
-* Allure reporting
-* Parallel test execution
-* Multi-browser support
-* Scheduled monitoring runs
-* Historical failure tracking
-* Dashboard-based reporting
-
----
-
-# 🎯 Why This Project?
-
-This project demonstrates practical skills commonly required in QA Automation and SDET roles:
-
-* End-to-end test automation
-* Test framework design
-* Page Object Model implementation
-* Failure handling and debugging
-* Monitoring and alerting systems
-* Maintainable automation architecture
-* Third-party service integrations
-
-Rather than simply validating UI functionality, the framework showcases how automated tests can be transformed into an active monitoring and notification system for critical user journeys.
+Watch the [Checkout Sentry demo](https://youtu.be/A25-7svYsNo) and explore the [source code](https://github.com/mahadsultanchaudhary/checkout_sentry).
