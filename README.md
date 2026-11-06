@@ -89,8 +89,8 @@ venv\Scripts\activate
 Install the packages used by the project and Chromium:
 
 ```bash
-pip install playwright pytest pytest-playwright requests python-dotenv
-playwright install chromium
+python -m pip install playwright pytest pytest-playwright requests python-dotenv
+python -m playwright install chromium
 ```
 
 To receive Slack notifications, create a `.env` file in the project root:
@@ -106,19 +106,19 @@ The `.env` file is listed in `.gitignore`. If `SLACK_WEBHOOK_URL` is unset, the 
 Successful checkout:
 
 ```bash
-pytest tests/test_checkout.py
+python -m pytest tests/test_checkout.py
 ```
 
 Deliberately failing test (invokes the failure hook):
 
 ```bash
-pytest tests/test_checkout_failure.py
+python -m pytest tests/test_checkout_failure.py
 ```
 
 To see the browser while running either test, add `--headed --slowmo 1000`, for example:
 
 ```bash
-pytest tests/test_checkout.py --headed --slowmo 1000
+python -m pytest tests/test_checkout.py --headed --slowmo 1000
 ```
 
 The tests navigate to `https://www.saucedemo.com/` and therefore require access to that demo site.
